@@ -88,14 +88,19 @@ export let AutoHide = class {
         80 - 60 * (this.extension.pressure_sense_sensitivity || 0);
 
       if (this.dock.isVertical()) {
+        let dockY = this.dock.dwell.y;
+        let dockH = this.dock.dwell.height;
+        let inRange = this.extension.panel_mode || (pointer[1] >= dockY - 4 && pointer[1] <= dockY + dockH + 4);
         if (
           // right
           (this.dock._position == DockPosition.RIGHT &&
             dy < area &&
+            inRange &&
             pointer[0] > monitor.x + sw - 4) ||
           // left
           (this.dock._position == DockPosition.LEFT &&
             dy < area &&
+            inRange &&
             pointer[0] < monitor.x + 4)
         ) {
           this._dwell++;
@@ -104,8 +109,14 @@ export let AutoHide = class {
           this.last_pointer = pointer;
         }
       } else {
-        // bottom
-        if (dx < area && pointer[1] + 4 > monitor.y + sh) {
+        // bottom or top
+        let dockX = this.dock.dwell.x;
+        let dockW = this.dock.dwell.width;
+        let inRange = this.extension.panel_mode || (pointer[0] >= dockX - 4 && pointer[0] <= dockX + dockW + 4);
+        let onEdge = this.dock._position == DockPosition.TOP
+          ? pointer[1] < monitor.y + 4
+          : pointer[1] + 4 > monitor.y + sh;
+        if (dx < area && onEdge && inRange) {
           this._dwell++;
         } else {
           this._dwell = 0;
@@ -123,7 +134,18 @@ export let AutoHide = class {
 
   _onEnterEvent() {
     if (!this.extension.pressure_sense) {
-      this.show();
+      let pointer = global.get_pointer();
+      let dockX = this.dock.dwell.x;
+      let dockW = this.dock.dwell.width;
+      let dockY = this.dock.dwell.y;
+      let dockH = this.dock.dwell.height;
+      let inRange = this.extension.panel_mode ||
+        (this.dock.isVertical()
+          ? (pointer[1] >= dockY - 4 && pointer[1] <= dockY + dockH + 4)
+          : (pointer[0] >= dockX - 4 && pointer[0] <= dockX + dockW + 4));
+      if (inRange) {
+        this.show();
+      }
     }
   }
 

@@ -834,6 +834,10 @@ export let Animator = class {
         if (dock.extension.autohide_dash) {
           dock.struts.y = dock._background.y + dock._monitor.y;
           dock.struts.height = dock._background.height;
+          if (!dock.extension.panel_mode && dock._background.height > 0) {
+            dock.dwell.y = dock.struts.y;
+            dock.dwell.height = dock.struts.height;
+          }
           // X11 .. click through fix ..
           // dock.struts.width *= 1.25;
         }
@@ -855,6 +859,10 @@ export let Animator = class {
         if (dock.extension.autohide_dash) {
           dock.struts.x = dock._background.x + dock._monitor.x;
           dock.struts.width = dock._background.width;
+          if (!dock.extension.panel_mode && dock._background.width > 0) {
+            dock.dwell.x = dock.struts.x;
+            dock.dwell.width = dock.struts.width;
+          }
           // X11 .. click through fix ..
           // dock.struts.height *= 1.25;
         }

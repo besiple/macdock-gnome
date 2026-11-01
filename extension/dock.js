@@ -1164,16 +1164,26 @@ export let Dock = GObject.registerClass(
       let dwellHeight = 2;
       if (vertical) {
         this.dwell.width = dwellHeight;
-        this.dwell.height = this.height;
+        if (!this.extension.panel_mode && this._background && this._background.height > 0) {
+          this.dwell.height = this._background.height;
+          this.dwell.y = this._background.y + m.y;
+        } else {
+          this.dwell.height = this.height;
+          this.dwell.y = this.y;
+        }
         this.dwell.x = m.x;
-        this.dwell.y = this.y;
         if (this._position == DockPosition.RIGHT) {
           this.dwell.x = m.x + m.width - dwellHeight;
         }
       } else {
-        this.dwell.width = this.width;
+        if (!this.extension.panel_mode && this._background && this._background.width > 0) {
+          this.dwell.width = this._background.width;
+          this.dwell.x = this._background.x + m.x;
+        } else {
+          this.dwell.width = this.width;
+          this.dwell.x = this.x;
+        }
         this.dwell.height = dwellHeight;
-        this.dwell.x = this.x;
         this.dwell.y = this.y + this.height - this.dwell.height;
         if (this._position == DockPosition.TOP) {
           this.dwell.y = this.y;
