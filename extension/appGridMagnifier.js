@@ -3,6 +3,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
+import St from 'gi://St';
 const Point = Graphene.Point;
 
 export class AppGridMagnifier {
@@ -14,7 +15,11 @@ export class AppGridMagnifier {
     this._stageMotionId = null;
     this._overviewShowingId = null;
     this._overviewHiddenId = null;
+    this._iconPivot = new Point({ x: 0.5, y: 0.85 });
     this._pv = new Point({ x: 0.5, y: 0.5 });
+    this._pill = null;
+    this._pillCurrentX = null;
+    this._activeItem = null;
   }
 
   enable() {
@@ -50,6 +55,30 @@ export class AppGridMagnifier {
 
     this._stopTracking();
     this._resetAllItems();
+    this._destroyPill();
+  }
+
+  _ensurePill() {
+    if (!this._pill) {
+      this._pill = new St.Label({
+        style_class: 'app-grid-mac-pill',
+        text: '',
+        visible: false,
+        opacity: 0,
+        reactive: false,
+      });
+      Main.layoutManager.overviewGroup.add_child(this._pill);
+    }
+  }
+
+  _destroyPill() {
+    if (this._pill) {
+      if (this._pill.get_parent()) {
+        this._pill.get_parent().remove_child(this._pill);
+      }
+      this._pill.destroy();
+      this._pill = null;
+    }
   }
 
   _onOverviewShowing() {
@@ -61,6 +90,7 @@ export class AppGridMagnifier {
     this._findItemsTimer = this.extension._loTimer.runDebounced(() => {
       this._findItems();
       this._startTracking();
+      this._ensurePill();
     }, 150, 'findAppGridItems');
   }
 
@@ -71,6 +101,11 @@ export class AppGridMagnifier {
     }
     this._stopTracking();
     this._resetAllItems();
+    if (this._pill) {
+      this._pill.visible = false;
+      this._pill.opacity = 0;
+      this._pillCurrentX = null;
+    }
   }
 
   _findItems() {
@@ -96,7 +131,31 @@ export class AppGridMagnifier {
         it._agmTargetScale = 1.0;
         it._agmSpreadX = it._agmSpreadX || 0.0;
         it._agmTargetSpreadX = 0.0;
-        it.pivot_point = this._pv;
+
+        // Completely strip ugly grey background card / border / outline
+        it.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
+        if (it.icon) {
+          it.icon.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
+        }
+
+        // Disable GNOME's 3-line word wrapping and tile height expansion
+        it._expandTitleOnHover = false;
+        if (typeof it._updateMultiline === 'function' && !it._agmOrigMultiline) {
+          it._agmOrigMultiline = it._updateMultiline;
+          it._updateMultiline = () => {};
+        }
+
+        // Ensure label text is single-line ellipsized without wrapping
+        if (it.icon && it.icon.label && it.icon.label.clutter_text) {
+          it.icon.label.clutter_text.set({
+            line_wrap: false,
+            ellipsize: 3 // Pango.EllipsizeMode.END
+          });
+        }
+
+        // Set pivot point for the icon graphic
+        let iconTarget = (it.icon && it.icon._iconBin) ? it.icon._iconBin : it;
+        iconTarget.pivot_point = this._iconPivot;
       });
     } catch (err) {
       console.log('[AppGridMagnifier] _findItems error:', err);
@@ -204,6 +263,8 @@ export class AppGridMagnifier {
 
     let stillMoving = false;
     let lerpSpeed = 0.22;
+    let maxItem = null;
+    let maxScale = 1.0;
 
     for (let i = 0; i < this._items.length; i++) {
       let item = this._items[i];
@@ -229,9 +290,19 @@ export class AppGridMagnifier {
       item._agmScale = currS;
       item._agmSpreadX = currX;
 
-      item.pivot_point = this._pv;
-      item.set_scale(currS, currS);
+      // Scale ONLY the icon graphic bin, so the label stays crisp and button height never jumps
+      let iconTarget = (item.icon && item.icon._iconBin) ? item.icon._iconBin : item;
+      iconTarget.pivot_point = this._iconPivot;
+      iconTarget.set_scale(currS, currS);
+
+      // Shift entire item horizontally to smoothly push neighbors aside
       item.translation_x = currX;
+
+      // Keep track of the most magnified item for the title pill
+      if (currS > maxScale) {
+        maxScale = currS;
+        maxItem = item;
+      }
 
       // Bring actively magnified icon to the top of its layer
       if (currS > 1.08 && item.get_parent()) {
@@ -241,8 +312,73 @@ export class AppGridMagnifier {
       }
     }
 
+    // Update the floating macOS Title Capsule
+    this._updatePill(maxItem, maxScale);
+
     if (!stillMoving) {
       this._stopTicker();
+    }
+  }
+
+  _updatePill(maxItem, maxScale) {
+    if (!this._pill) return;
+
+    if (maxItem && maxScale > 1.06 && maxItem.is_mapped()) {
+      let title = maxItem._name || (maxItem.app ? maxItem.app.get_name() : '');
+      if (title && title.length > 0) {
+        this._pill.text = title;
+
+        let labelActor = (maxItem.icon && maxItem.icon.label) ? maxItem.icon.label : null;
+        let [ix, iy] = maxItem.get_transformed_position();
+        let cx = ix + (maxItem.width / 2);
+
+        // Position pill smoothly over the label location
+        let targetY = labelActor && labelActor.is_mapped() 
+          ? labelActor.get_transformed_position()[1] - 4
+          : iy + maxItem.height - 28;
+
+        let targetX = cx - (this._pill.width / 2);
+
+        if (this._pillCurrentX === null) {
+          this._pillCurrentX = targetX;
+        } else {
+          this._pillCurrentX += (targetX - this._pillCurrentX) * 0.35;
+        }
+
+        this._pill.set_position(Math.round(this._pillCurrentX), Math.round(targetY));
+        this._pill.visible = true;
+        this._pill.opacity = Math.min(255, this._pill.opacity + 45);
+
+        // Fade out the base label under the hovered icon to cleanly reveal the full capsule
+        for (let i = 0; i < this._items.length; i++) {
+          let it = this._items[i];
+          if (it.icon && it.icon.label) {
+            if (it === maxItem) {
+              it.icon.label.opacity = 0;
+            } else {
+              it.icon.label.opacity = 255;
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    // Fade out pill when no item is magnified
+    if (this._pill.opacity > 0) {
+      this._pill.opacity = Math.max(0, this._pill.opacity - 40);
+      if (this._pill.opacity === 0) {
+        this._pill.visible = false;
+        this._pillCurrentX = null;
+      }
+    }
+
+    // Restore all labels
+    for (let i = 0; i < this._items.length; i++) {
+      let it = this._items[i];
+      if (it && it.icon && it.icon.label) {
+        it.icon.label.opacity = 255;
+      }
     }
   }
 
@@ -255,8 +391,12 @@ export class AppGridMagnifier {
             it._agmTargetScale = 1.0;
             it._agmSpreadX = 0.0;
             it._agmTargetSpreadX = 0.0;
-            it.set_scale(1.0, 1.0);
+            let iconTarget = (it.icon && it.icon._iconBin) ? it.icon._iconBin : it;
+            iconTarget.set_scale(1.0, 1.0);
             it.translation_x = 0.0;
+            if (it.icon && it.icon.label) {
+              it.icon.label.opacity = 255;
+            }
           }
         } catch (e) {}
       });

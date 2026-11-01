@@ -29,3 +29,51 @@
 #dash .dash-item-container {
   /*border: 2px solid magenta;*/
 }
+
+/* ==========================================================================
+   MacDock: Clean App Grid (No grey boxes/outlines & macOS Floating Pill)
+   ========================================================================== */
+
+#appDisplay .overview-tile,
+#appDisplay .overview-tile:hover,
+#appDisplay .overview-tile:focus,
+#appDisplay .overview-tile:active,
+#appDisplay .overview-tile:selected,
+#appDisplay .overview-tile:highlighted,
+#appDisplay .overview-icon,
+#appDisplay .overview-icon:hover,
+#appDisplay .overview-icon:focus,
+#appDisplay .overview-icon:active,
+#appDisplay .overview-icon:selected,
+#appDisplay .overview-icon:highlighted,
+.icon-grid .overview-tile,
+.icon-grid .overview-tile:hover,
+.icon-grid .overview-tile:focus,
+.icon-grid .overview-tile:active,
+.icon-grid .overview-tile:selected,
+.icon-grid .overview-tile:highlighted,
+.overview-tile,
+.overview-tile:hover,
+.overview-tile:focus,
+.overview-tile:active,
+.overview-tile:selected,
+.overview-tile:highlighted {
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.app-grid-mac-pill {
+  background-color: rgba(22, 22, 26, 0.88) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 6px 16px !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  text-align: center;
+}
