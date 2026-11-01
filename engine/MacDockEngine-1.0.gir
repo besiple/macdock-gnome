@@ -1,0 +1,249 @@
+<?xml version="1.0"?>
+<!-- This file was automatically generated from C sources - DO NOT EDIT!
+To affect the contents of this file, edit the original C definitions,
+and/or use gtk-doc annotations.  -->
+<repository version="1.2"
+            xmlns="http://www.gtk.org/introspection/core/1.0"
+            xmlns:c="http://www.gtk.org/introspection/c/1.0"
+            xmlns:doc="http://www.gtk.org/introspection/doc/1.0"
+            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">
+  <include name="GObject" version="2.0"/>
+  <include name="Gio" version="2.0"/>
+  <doc:format name="unknown"/>
+  <namespace name="MacDockEngine"
+             version="1.0"
+             shared-library=""
+             c:identifier-prefixes="MacDockEngine"
+             c:symbol-prefixes="macdock_engine">
+    <function name="create" c:identifier="macdock_engine_create">
+      <source-position filename="macdock_engine.h" line="10"/>
+      <return-value transfer-ownership="none">
+        <type name="guintptr" c:type="guintptr"/>
+      </return-value>
+      <parameters>
+        <parameter name="count" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="destroy" c:identifier="macdock_engine_destroy">
+      <source-position filename="macdock_engine.h" line="11"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="feed_edge_motion"
+              c:identifier="macdock_engine_feed_edge_motion">
+      <source-position filename="macdock_engine.h" line="24"/>
+      <return-value transfer-ownership="none">
+        <type name="gboolean" c:type="gboolean"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="velocity" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="dt" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="get_dock_width"
+              c:identifier="macdock_engine_get_dock_width">
+      <source-position filename="macdock_engine.h" line="19"/>
+      <return-value transfer-ownership="none">
+        <type name="gdouble" c:type="gdouble"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="get_icon_scale_x"
+              c:identifier="macdock_engine_get_icon_scale_x">
+      <source-position filename="macdock_engine.h" line="22"/>
+      <return-value transfer-ownership="none">
+        <type name="gdouble" c:type="gdouble"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="index" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="get_icon_scale_y"
+              c:identifier="macdock_engine_get_icon_scale_y">
+      <source-position filename="macdock_engine.h" line="23"/>
+      <return-value transfer-ownership="none">
+        <type name="gdouble" c:type="gdouble"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="index" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="get_icon_x" c:identifier="macdock_engine_get_icon_x">
+      <source-position filename="macdock_engine.h" line="20"/>
+      <return-value transfer-ownership="none">
+        <type name="gdouble" c:type="gdouble"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="index" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="get_icon_y" c:identifier="macdock_engine_get_icon_y">
+      <source-position filename="macdock_engine.h" line="21"/>
+      <return-value transfer-ownership="none">
+        <type name="gdouble" c:type="gdouble"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="index" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="is_animating" c:identifier="macdock_engine_is_animating">
+      <source-position filename="macdock_engine.h" line="17"/>
+      <return-value transfer-ownership="none">
+        <type name="gboolean" c:type="gboolean"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="set_config" c:identifier="macdock_engine_set_config">
+      <source-position filename="macdock_engine.h" line="12"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="base_size" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="max_scale" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="radius" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="spacing" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="set_icon_count"
+              c:identifier="macdock_engine_set_icon_count">
+      <source-position filename="macdock_engine.h" line="13"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="count" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="step" c:identifier="macdock_engine_step">
+      <source-position filename="macdock_engine.h" line="18"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="dt" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="trigger_bounce"
+              c:identifier="macdock_engine_trigger_bounce">
+      <source-position filename="macdock_engine.h" line="16"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="index" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+        <parameter name="initial_velocity" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="max_bounces" transfer-ownership="none">
+          <type name="guint32" c:type="guint32"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="update_pointer"
+              c:identifier="macdock_engine_update_pointer">
+      <source-position filename="macdock_engine.h" line="14"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="mouse_x" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="inside" transfer-ownership="none">
+          <type name="gboolean" c:type="gboolean"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="update_pointer_proximity"
+              c:identifier="macdock_engine_update_pointer_proximity">
+      <source-position filename="macdock_engine.h" line="15"/>
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="engine" transfer-ownership="none">
+          <type name="guintptr" c:type="guintptr"/>
+        </parameter>
+        <parameter name="mouse_x" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+        <parameter name="proximity" transfer-ownership="none">
+          <type name="gdouble" c:type="gdouble"/>
+        </parameter>
+      </parameters>
+    </function>
+  </namespace>
+</repository>

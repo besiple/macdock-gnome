@@ -1,0 +1,11 @@
+# Rust artifacts
+target/
+engine/target/
+**/*.rs.bk
+Cargo.lock
+
+# Backups and temporary files
+*.bak
+*.swp
+*~
+.DS_Store
