@@ -29,3 +29,81 @@
 #dash .dash-item-container {
   /*border: 2px solid magenta;*/
 }
+
+/* ==========================================================================
+   Clean Minimal App Grid: Floating icons without text labels or hover cards
+   ========================================================================== */
+#appDisplay .overview-tile,
+#appDisplay .overview-tile:hover,
+#appDisplay .overview-tile:focus,
+#appDisplay .overview-tile:selected,
+#appDisplay .overview-tile:active,
+#appDisplay .overview-tile:highlighted,
+#appDisplay .overview-tile:checked,
+#appDisplay .overview-tile:drop,
+.app-folder,
+.app-folder:hover,
+.app-folder:focus,
+.app-folder:selected,
+.app-folder:active,
+.app-folder-dialog .overview-tile,
+.app-folder-dialog .overview-tile:hover,
+.app-folder-dialog .overview-tile:focus,
+.app-folder-dialog .overview-tile:selected,
+.app-folder-dialog .overview-tile:active,
+.app-folder-dialog .overview-tile:highlighted,
+.app-folder-dialog .overview-tile:checked,
+.overview-tile,
+.overview-tile:hover,
+.overview-tile:focus,
+.overview-tile:selected,
+.overview-tile:active,
+.overview-tile:highlighted,
+.overview-tile:checked,
+.overview-tile:drop,
+.grid-search-result,
+.grid-search-result:hover,
+.grid-search-result:focus,
+.grid-search-result:selected,
+.grid-search-result:active,
+.grid-search-result:highlighted,
+.grid-search-result:checked {
+  background-color: transparent !important;
+  background-gradient-direction: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+#appDisplay .overview-tile .overview-icon,
+#appDisplay .overview-tile:hover .overview-icon,
+#appDisplay .overview-tile:focus .overview-icon,
+#appDisplay .overview-tile:selected .overview-icon,
+.app-folder-dialog .overview-tile .overview-icon,
+.overview-tile .overview-icon,
+.overview-tile:hover .overview-icon,
+.overview-tile:focus .overview-icon,
+.overview-tile:selected .overview-icon {
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+#appDisplay .overview-tile StLabel,
+#appDisplay .overview-icon StLabel,
+.overview-tile StLabel,
+.overview-icon StLabel,
+.overview-icon-with-label StLabel,
+.app-folder-dialog .overview-tile StLabel {
+  opacity: 0 !important;
+  height: 0px !important;
+  margin: 0px !important;
+  padding: 0px !important;
+  font-size: 0px !important;
+  color: transparent !important;
+}
+
