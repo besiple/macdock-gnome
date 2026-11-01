@@ -43,7 +43,7 @@ import {
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
-import { AppGridMagnifier } from './appGridMagnifier.js';
+import { AppGridClean } from './appGridClean.js';
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -235,10 +235,10 @@ export default class Dash2DockLiteExt extends Extension {
     // this.startUp();
 
     try {
-      this.appGridMagnifier = new AppGridMagnifier(this);
-      this.appGridMagnifier.enable();
+      this.appGridClean = new AppGridClean(this);
+      this.appGridClean.enable();
     } catch (e) {
-      console.log('[dash2dock-lite] AppGridMagnifier enable failed:', e);
+      console.log('[dash2dock-lite] AppGridClean enable failed:', e);
     }
 
     console.log('dash2dock-lite enabled');
@@ -286,11 +286,11 @@ export default class Dash2DockLiteExt extends Extension {
     delete this.icon_theme;
     this.icon_theme = null;
 
-    if (this.appGridMagnifier) {
+    if (this.appGridClean) {
       try {
-        this.appGridMagnifier.disable();
+        this.appGridClean.disable();
       } catch (e) {}
-      this.appGridMagnifier = null;
+      this.appGridClean = null;
     }
 
     Main.overview.d2dl = null;

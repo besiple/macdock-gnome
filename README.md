@@ -31,9 +31,9 @@
   - 3-stop radial gradient with specular top-light highlight.
 * **Shelf-Anchored**: The running indicator dot remains firmly grounded on the dock shelf even while the application icon bounces energetically above it.
 
-### 3. 🔍 App Grid / Launchpad Magnifier Lens
-* **macOS Launchpad Feel**: Hovering over apps in the GNOME Overview smoothly magnifies the icon in-place (+38%) with cosine-squared bell curve physics.
-* **Minimalist & Clean**: Zero text labels, zero grey hover cards/outlines — pure floating icons.
+### 3. 🧼 Clean App Grid (Minimalist Launchpad)
+* **Zero Visual Noise**: App title labels under icons are completely hidden for a pure, clean aesthetic.
+* **No Clunky Cards**: Hover and focus background cards and outlines are disabled — icons float directly over your wallpaper.
 
 ### 4. 🪶 Velvet Dock Autohide
 * Completely eliminated the abrupt "double-zoom" glitch during reveal.
