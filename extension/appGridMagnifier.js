@@ -10,8 +10,7 @@ export class AppGridMagnifier {
     this.extension = extension;
     this._enabled = false;
     this._items = [];
-    this._ticker = null;
-    this._stageMotionId = null;
+    this._hoverSignalIds = new Map();
     this._overviewShownId = null;
     this._overviewHiddenId = null;
     this._pv = new Point({ x: 0.5, y: 0.5 });
@@ -21,16 +20,16 @@ export class AppGridMagnifier {
     if (this._enabled) return;
     this._enabled = true;
 
-    this._overviewShownId = Main.overview.connect('shown', () => {
-      this._onOverviewShown();
+    this._overviewShowingId = Main.overview.connect('showing', () => {
+      this._setupAppGrid();
     });
 
     this._overviewHiddenId = Main.overview.connect('hidden', () => {
-      this._onOverviewHidden();
+      this._resetAllItems();
     });
 
-    if (Main.overview.visible) {
-      this._onOverviewShown();
+    if (Main.overview.visible || Main.overview.visibleTarget) {
+      this._setupAppGrid();
     }
   }
 
@@ -38,32 +37,44 @@ export class AppGridMagnifier {
     if (!this._enabled) return;
     this._enabled = false;
 
-    if (this._overviewShownId) {
-      Main.overview.disconnect(this._overviewShownId);
-      this._overviewShownId = null;
+    if (this._overviewShowingId) {
+      Main.overview.disconnect(this._overviewShowingId);
+      this._overviewShowingId = null;
     }
     if (this._overviewHiddenId) {
       Main.overview.disconnect(this._overviewHiddenId);
       this._overviewHiddenId = null;
     }
 
-    this._stopTracking();
+    this._disconnectHoverSignals();
     this._resetAllItems();
   }
 
-  _onOverviewShown() {
-    this._items = [];
-    this._findItems();
-    this._startTracking();
+  _setupAppGrid() {
+    // Delay slightly to let AppDisplay settle its items
+    if (this._setupTimer) {
+      this.extension._loTimer.cancel(this._setupTimer);
+    }
+    this._setupTimer = this.extension._loTimer.runDebounced(() => {
+      this._initItems();
+    }, 120, 'setupAppGridMagnifier');
   }
 
-  _onOverviewHidden() {
-    this._stopTracking();
-    this._resetAllItems();
+  _disconnectHoverSignals() {
+    for (let [item, id] of this._hoverSignalIds.entries()) {
+      try {
+        if (item && id) {
+          item.disconnect(id);
+        }
+      } catch (e) {}
+    }
+    this._hoverSignalIds.clear();
   }
 
-  _findItems() {
+  _initItems() {
     try {
+      this._disconnectHoverSignals();
+
       let controls = Main.overview._overview.controls || Main.overview._overview._controls;
       if (!controls) return;
       let appDisplay = controls.appDisplay || controls._appDisplay;
@@ -78,23 +89,32 @@ export class AppGridMagnifier {
         rawItems = appDisplay._grid.get_children();
       }
 
-      this._items = rawItems.filter(it => it && it.visible !== false && it.is_mapped());
+      this._items = rawItems.filter(it => it && it.visible !== false);
+      if (this._items.length === 0) return;
 
-      this._items.forEach(it => {
-        it._agmScale = 1.0;
-        it._agmTargetScale = 1.0;
-        it._baseCenterX = null;
-        it._baseCenterY = null;
+      // Sort items horizontally left-to-right
+      this._items.sort((a, b) => {
+        let posA = a.get_transformed_position();
+        let posB = b.get_transformed_position();
+        return posA[0] - posB[0];
+      });
 
+      this._items.forEach((it, index) => {
+        it.remove_all_transitions();
         it.set_scale(1.0, 1.0);
         it.translation_x = 0.0;
         it.translation_y = 0.0;
         it.pivot_point = this._pv;
 
         // Completely strip ugly grey background card / border / outline
-        it.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
+        it.set_style('background: transparent !important; background-color: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
         if (it.icon) {
-          it.icon.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
+          it.icon.set_style('background: transparent !important; background-color: transparent !important; box-shadow: none !important; border: none !important; outline: none !important;');
+          if (it.icon._iconBin) {
+            it.icon._iconBin.set_scale(1.0, 1.0);
+            it.icon._iconBin.translation_x = 0.0;
+            it.icon._iconBin.translation_y = 0.0;
+          }
         }
 
         // Disable GNOME's multiline word-wrapping and tile height expansion
@@ -104,7 +124,7 @@ export class AppGridMagnifier {
           it._updateMultiline = () => {};
         }
 
-        // Completely hide the app name label for clean minimal aesthetic
+        // Completely hide the app name label for pure minimal aesthetic
         if (it.icon && it.icon.label) {
           it.icon.label.visible = false;
           it.icon.label.opacity = 0;
@@ -114,139 +134,82 @@ export class AppGridMagnifier {
             it.icon.label.clutter_text.text = '';
           }
         }
+
+        // Connect hover notification
+        let sigId = it.connect('notify::hover', () => {
+          this._onItemHoverChanged(it, index);
+        });
+        this._hoverSignalIds.set(it, sigId);
       });
     } catch (err) {
-      console.log('[AppGridMagnifier] _findItems error:', err);
+      console.log('[AppGridMagnifier] _initItems error:', err);
     }
   }
 
-  _startTracking() {
-    if (this._stageMotionId) return;
+  _onItemHoverChanged(hoveredItem, index) {
+    if (!this._enabled || !this._items || this._items.length === 0) return;
 
-    this._stageMotionId = global.stage.connect('captured-event', (actor, event) => {
-      if (event.type() === Clutter.EventType.MOTION) {
-        let [px, py] = event.get_coords();
-        this._onPointerMotion(px, py);
-      }
-      return Clutter.EVENT_PROPAGATE;
-    });
-  }
-
-  _stopTracking() {
-    if (this._stageMotionId) {
-      global.stage.disconnect(this._stageMotionId);
-      this._stageMotionId = null;
-    }
-    this._stopTicker();
-  }
-
-  _onPointerMotion(px, py) {
-    if (!this._items || this._items.length === 0) {
-      this._findItems();
-      if (!this._items || this._items.length === 0) return;
-    }
-
-    let radius = 220.0;     // Horizontal lens influence radius
-    let vTolerance = 140.0; // Vertical band tolerance
-    let maxZoom = 0.38;     // +38% magnification at peak
-    let needsMotion = false;
+    let anyHovered = false;
+    let hoveredIdx = -1;
 
     for (let i = 0; i < this._items.length; i++) {
-      let item = this._items[i];
-      if (!item.is_mapped()) continue;
-
-      // Lock resting center once so scaling never causes coordinate drift
-      if (item._baseCenterX === null || item._baseCenterX === undefined) {
-        let pos = item.get_transformed_position();
-        if (isNaN(pos[0]) || isNaN(pos[1])) continue;
-        item._baseCenterX = pos[0] + (item.width * (item.scale_x || 1.0)) / 2;
-        item._baseCenterY = pos[1] + (item.height * (item.scale_y || 1.0)) / 2;
-      }
-
-      let dx = Math.abs(px - item._baseCenterX);
-      let dy = Math.abs(py - item._baseCenterY);
-
-      if (dx < radius && dy < vTolerance) {
-        let u = dx / radius;
-        let bell = Math.cos(u * Math.PI * 0.5);
-        let intensity = bell * bell;
-
-        let vNorm = dy / vTolerance;
-        let vFactor = Math.cos(vNorm * Math.PI * 0.5);
-        intensity *= (vFactor * vFactor);
-
-        item._agmTargetScale = 1.0 + maxZoom * intensity;
-      } else {
-        item._agmTargetScale = 1.0;
-      }
-
-      if (item._agmTargetScale !== 1.0 || (item._agmScale && item._agmScale !== 1.0)) {
-        needsMotion = true;
+      if (this._items[i].hover) {
+        anyHovered = true;
+        hoveredIdx = i;
+        break;
       }
     }
 
-    if (needsMotion) {
-      this._startTicker();
-    }
-  }
+    if (anyHovered && hoveredIdx >= 0) {
+      for (let i = 0; i < this._items.length; i++) {
+        let it = this._items[i];
+        let dist = Math.abs(i - hoveredIdx);
 
-  _startTicker() {
-    if (this._ticker) return;
+        it.remove_all_transitions();
 
-    this._ticker = this.extension._hiTimer.runLoop(() => {
-      this._step();
-    }, 16, 'appGridMagnifier');
-  }
-
-  _stopTicker() {
-    if (this._ticker) {
-      this.extension._hiTimer.cancel(this._ticker);
-      this._ticker = null;
-    }
-  }
-
-  _step() {
-    if (!this._items || this._items.length === 0) {
-      this._stopTicker();
-      return;
-    }
-
-    let stillMoving = false;
-    let lerpSpeed = 0.22;
-
-    for (let i = 0; i < this._items.length; i++) {
-      let item = this._items[i];
-      if (!item) continue;
-
-      let currS = item._agmScale !== undefined ? item._agmScale : 1.0;
-      let targS = item._agmTargetScale !== undefined ? item._agmTargetScale : 1.0;
-      let diffS = targS - currS;
-
-      if (Math.abs(diffS) > 0.002) {
-        stillMoving = true;
-        currS += diffS * lerpSpeed;
-      } else {
-        currS = targS;
+        if (dist === 0) {
+          // Hovered icon: major magnification (+38%)
+          it.ease({
+            scale_x: 1.38,
+            scale_y: 1.38,
+            duration: 140,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+          });
+          if (it.get_parent()) {
+            try {
+              it.get_parent().set_child_above_sibling(it, null);
+            } catch (e) {}
+          }
+        } else if (dist === 1) {
+          // Direct neighbor: subtle organic bloom (+15%)
+          it.ease({
+            scale_x: 1.15,
+            scale_y: 1.15,
+            duration: 150,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+          });
+        } else {
+          // Rest of icons: smooth return to standard size
+          it.ease({
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          });
+        }
       }
-
-      item._agmScale = currS;
-
-      // Pure in-place scaling: centered on icon, no translation
-      item.pivot_point = this._pv;
-      item.set_scale(currS, currS);
-      item.translation_x = 0.0;
-      item.translation_y = 0.0;
-
-      // Bring actively magnified icon to the top of its layer
-      if (currS > 1.06 && item.get_parent()) {
-        try {
-          item.get_parent().set_child_above_sibling(item, null);
-        } catch (e) {}
+    } else {
+      // No icon is hovered: cleanly ease all icons back to standard scale
+      for (let i = 0; i < this._items.length; i++) {
+        let it = this._items[i];
+        it.remove_all_transitions();
+        it.ease({
+          scale_x: 1.0,
+          scale_y: 1.0,
+          duration: 180,
+          mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
       }
-    }
-
-    if (!stillMoving) {
-      this._stopTicker();
     }
   }
 
@@ -255,10 +218,7 @@ export class AppGridMagnifier {
       this._items.forEach(it => {
         try {
           if (it) {
-            it._agmScale = 1.0;
-            it._agmTargetScale = 1.0;
-            it._baseCenterX = null;
-            it._baseCenterY = null;
+            it.remove_all_transitions();
             it.set_scale(1.0, 1.0);
             it.translation_x = 0.0;
             it.translation_y = 0.0;
