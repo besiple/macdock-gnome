@@ -7,11 +7,9 @@ import Graphene from 'gi://Graphene';
 const Point = Graphene.Point;
 const TARGET_ICON_SIZE = 64; // Standard clean medium icon size (prevents 96px oversized icons)
 
-// macOS Aqua Magnification parameters
-const MAX_SCALE = 1.36;       // Peak magnification for hovered icon (+36%)
-const NEIGHBOR_SCALE = 1.15;  // Smooth cosine wave falloff for immediate neighbors
-const SECOND_NEIGHBOR = 1.04; // Subtle bloom for second neighbors
-const EASE_DURATION = 135;    // GPU animation duration in milliseconds
+// macOS Launchpad Focus Zoom parameters
+const MAX_SCALE = 1.32;       // Clean, elegant hover zoom (+32%)
+const EASE_DURATION = 140;    // Fluid cubic animation duration in ms
 
 export class AppGridClean {
   constructor(extension) {
@@ -244,63 +242,22 @@ export class AppGridClean {
       return;
     }
 
-    // Determine visual row based on Y coordinate
-    let hoveredPos = hoveredItem.get_transformed_position();
-    let hoveredY = hoveredPos[1];
-
-    let rowItems = items.filter(it => {
-      if (!it || !it.is_mapped()) return false;
-      let pos = it.get_transformed_position();
-      return Math.abs(pos[1] - hoveredY) < 35;
-    });
-
-    // Sort row items horizontally from left to right
-    rowItems.sort((a, b) => {
-      let ax = a.get_transformed_position()[0];
-      let bx = b.get_transformed_position()[0];
-      return ax - bx;
-    });
-
-    let hoveredIndex = rowItems.indexOf(hoveredItem);
-
-    // Apply macOS Aqua magnification wave
-    rowItems.forEach((it, idx) => {
+    // Smoothly scale the hovered icon up, and keep all others at 1.0 (no neighbor jitter)
+    items.forEach(it => {
       let targetActor = this._getTargetActor(it);
       if (!targetActor) return;
 
-      let dist = Math.abs(idx - hoveredIndex);
-      let targetScale = 1.0;
+      let targetScale = (it === hoveredItem) ? MAX_SCALE : 1.0;
+      let currScale = targetActor.scale_x || 1.0;
 
-      if (dist === 0) {
-        targetScale = MAX_SCALE;
-      } else if (dist === 1) {
-        targetScale = NEIGHBOR_SCALE;
-      } else if (dist === 2) {
-        targetScale = SECOND_NEIGHBOR;
-      }
-
-      targetActor.remove_all_transitions();
-      targetActor.ease({
-        scale_x: targetScale,
-        scale_y: targetScale,
-        duration: EASE_DURATION,
-        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-      });
-    });
-
-    // Reset items on other rows
-    items.forEach(it => {
-      if (!rowItems.includes(it)) {
-        let targetActor = this._getTargetActor(it);
-        if (targetActor && (targetActor.scale_x !== 1.0 || targetActor.scale_y !== 1.0)) {
-          targetActor.remove_all_transitions();
-          targetActor.ease({
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: EASE_DURATION,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-          });
-        }
+      if (Math.abs(currScale - targetScale) > 0.01) {
+        targetActor.remove_all_transitions();
+        targetActor.ease({
+          scale_x: targetScale,
+          scale_y: targetScale,
+          duration: EASE_DURATION,
+          mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
       }
     });
   }
