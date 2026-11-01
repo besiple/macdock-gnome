@@ -15,6 +15,9 @@ export class AppGridMagnifier {
     this._overviewShowingId = null;
     this._overviewHiddenId = null;
     this._pv = new Point({ x: 0.5, y: 0.5 });
+    this._rowCenterX = 0.0;
+    this._rowCenterY = 0.0;
+    this._baseSpacing = 16.0;
   }
 
   enable() {
@@ -89,7 +92,8 @@ export class AppGridMagnifier {
         rawItems = appDisplay._grid.get_children();
       }
 
-      this._items = rawItems.filter(it => it && it.visible !== false);
+      this._items = rawItems.filter(it => it && it.visible !== false && it.is_mapped());
+      if (this._items.length === 0) return;
 
       this._items.forEach(it => {
         it._agmScale = it._agmScale || 1.0;
@@ -115,14 +119,33 @@ export class AppGridMagnifier {
           it.icon.label.visible = false;
           it.icon.label.opacity = 0;
           it.icon.label.height = 0;
+          if (it.icon.label.clutter_text) {
+            it._origLabelText = it._origLabelText || it.icon.label.clutter_text.text;
+            it.icon.label.clutter_text.text = '';
+          }
         }
 
         // Set pivot point centered on the icon
         it.pivot_point = this._pv;
-        if (it.icon && it.icon._iconBin) {
-          it.icon._iconBin.pivot_point = this._pv;
-        }
+
+        // Record resting center coordinates
+        let pos = it.get_transformed_position();
+        it._agmBaseX = pos[0] + it.width / 2;
+        it._agmBaseY = pos[1] + it.height / 2;
+        it._agmBaseWidth = it.width;
       });
+
+      // Sort items left-to-right by X coordinate
+      this._items.sort((a, b) => a._agmBaseX - b._agmBaseX);
+
+      // Compute row geometric center and unmagnified spacing
+      let count = this._items.length;
+      this._rowCenterX = (this._items[0]._agmBaseX + this._items[count - 1]._agmBaseX) / 2;
+      this._rowCenterY = this._items[0]._agmBaseY;
+      this._baseSpacing = count > 1 
+        ? (this._items[1]._agmBaseX - this._items[0]._agmBaseX) - this._items[0]._agmBaseWidth 
+        : 16.0;
+      if (this._baseSpacing < 0) this._baseSpacing = 16.0;
     } catch (err) {
       console.log('[AppGridMagnifier] _findItems error:', err);
     }
@@ -154,50 +177,67 @@ export class AppGridMagnifier {
       if (!this._items || this._items.length === 0) return;
     }
 
-    let radius = 250.0;     // Horizontal lens influence radius
+    let count = this._items.length;
+    let radius = 240.0;     // Horizontal lens influence radius
     let vTolerance = 140.0; // Vertical band tolerance
     let maxZoom = 0.38;     // +38% magnification at peak
-    let maxSpread = 20.0;   // Horizontal push between neighbors
 
     let needsMotion = false;
+    let widths = [];
 
-    for (let i = 0; i < this._items.length; i++) {
+    // Vertical proximity factor
+    let dy = Math.abs(py - this._rowCenterY);
+    let vFactor = 0.0;
+    if (dy < vTolerance) {
+      let vNorm = dy / vTolerance;
+      let cosV = Math.cos(vNorm * Math.PI * 0.5);
+      vFactor = cosV * cosV;
+    }
+
+    // 1. Calculate each icon's target scale based on distance to cursor
+    for (let i = 0; i < count; i++) {
       let item = this._items[i];
-      if (!item.is_mapped()) continue;
+      let baseW = item._agmBaseWidth || 96.0;
 
-      let pos = item.get_transformed_position();
-      if (isNaN(pos[0]) || isNaN(pos[1])) continue;
-
-      let cx = pos[0] + item.width / 2;
-      let cy = pos[1] + item.height / 2;
-
-      let dx = px - cx;
-      let dy = Math.abs(py - cy);
-
-      if (dy < vTolerance) {
-        let distH = Math.abs(dx);
+      if (vFactor > 0.001) {
+        let distH = Math.abs(px - item._agmBaseX);
         if (distH < radius) {
           let u = distH / radius;
           let bell = Math.cos(u * Math.PI * 0.5);
-          let intensity = bell * bell;
-
-          let vNorm = dy / vTolerance;
-          let vFactor = Math.cos(vNorm * Math.PI * 0.5);
-          intensity *= (vFactor * vFactor);
-
+          let intensity = (bell * bell) * vFactor;
           item._agmTargetScale = 1.0 + maxZoom * intensity;
-          item._agmTargetSpreadX = (cx >= px ? 1 : -1) * maxSpread * intensity;
         } else {
           item._agmTargetScale = 1.0;
-          item._agmTargetSpreadX = 0.0;
         }
       } else {
         item._agmTargetScale = 1.0;
-        item._agmTargetSpreadX = 0.0;
       }
+
+      widths[i] = baseW * item._agmTargetScale;
 
       if (item._agmTargetScale !== 1.0 || (item._agmScale && item._agmScale !== 1.0)) {
         needsMotion = true;
+      }
+    }
+
+    // 2. Cumulative non-overlapping layout (macOS Dock physical model)
+    // The icon under the cursor expands symmetrically in place,
+    // while neighbor icons shift smoothly to the sides to accommodate it.
+    let totalW = 0.0;
+    for (let i = 0; i < count; i++) {
+      totalW += widths[i];
+    }
+    totalW += (count - 1) * this._baseSpacing;
+
+    let currentX = this._rowCenterX - totalW * 0.5 + widths[0] * 0.5;
+
+    for (let i = 0; i < count; i++) {
+      let item = this._items[i];
+      let targetCenterX = currentX;
+      item._agmTargetSpreadX = targetCenterX - item._agmBaseX;
+
+      if (i + 1 < count) {
+        currentX += widths[i] * 0.5 + this._baseSpacing + widths[i + 1] * 0.5;
       }
     }
 
@@ -242,7 +282,7 @@ export class AppGridMagnifier {
       let targX = item._agmTargetSpreadX !== undefined ? item._agmTargetSpreadX : 0.0;
       let diffX = targX - currX;
 
-      if (Math.abs(diffS) > 0.003 || Math.abs(diffX) > 0.3) {
+      if (Math.abs(diffS) > 0.002 || Math.abs(diffX) > 0.2) {
         stillMoving = true;
         currS += diffS * lerpSpeed;
         currX += diffX * lerpSpeed;
@@ -283,6 +323,11 @@ export class AppGridMagnifier {
             it._agmTargetSpreadX = 0.0;
             it.set_scale(1.0, 1.0);
             it.translation_x = 0.0;
+            if (it._origLabelText && it.icon && it.icon.label && it.icon.label.clutter_text) {
+              it.icon.label.clutter_text.text = it._origLabelText;
+              it.icon.label.visible = true;
+              it.icon.label.opacity = 255;
+            }
           }
         } catch (e) {}
       });
