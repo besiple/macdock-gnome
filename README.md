@@ -1,7 +1,7 @@
 # 🍎 MacDock GNOME
 
 <p align="center">
-  <b>Authentic macOS Dock Physics, Cairo Glass Bead Indicators & Launchpad Magnifier Lens for GNOME Shell</b>
+  <b>Authentic macOS Dock Physics, Cairo Glass Bead Indicators & Velvet Autohide for GNOME Shell</b>
 </p>
 
 <p align="center">
@@ -31,13 +31,7 @@
   - 3-stop radial gradient with specular top-light highlight.
 * **Shelf-Anchored**: The running indicator dot remains firmly grounded on the dock shelf even while the application icon bounces energetically above it.
 
-### 3. 🔍 App Grid / Launchpad Magnifier Lens
-* **macOS Cover Flow / Launchpad Feel**: Hovering over apps in the GNOME Overview triggers a smooth dynamic lens.
-* **Cosine-Squared Bell Curve**: Focused application smoothly enlarges up to **+38%** with seamless falloff.
-* **Neighbor Repulsion**: Sibling icons dynamically push outward (up to **20px**) to prevent clipping or visual congestion.
-* **Layer Elevation**: Magnified icons automatically elevate above adjacent elements.
-
-### 4. 🪶 Velvet Dock Autohide
+### 3. 🪶 Velvet Dock Autohide
 * Completely eliminated the abrupt "double-zoom" glitch during reveal.
 * Proximity magnification is smoothly suppressed while the dock travels, opening cleanly before tracking the cursor.
 

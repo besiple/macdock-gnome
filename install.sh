@@ -97,7 +97,6 @@ echo -e "\n${BOLD}${GREEN}======================================================
 echo "          🎉 MacDock GNOME successfully installed!        "
 echo "==========================================================${RESET}"
 echo -e "Enjoy:"
-echo -e "  • ${CYAN}True macOS Launchpad / Grid Magnifier Lens${RESET} in App Grid (Super key)"
 echo -e "  • ${CYAN}Native Cairo glass bead running dots${RESET} with specular highlights"
 echo -e "  • ${CYAN}Realistic rubber squash & stretch bounce${RESET} powered by Rust"
 echo -e "  • ${CYAN}Velvet dock slide & auto-hide${RESET}\n"

@@ -43,7 +43,6 @@ import {
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
-import { AppGridMagnifier } from './appGridMagnifier.js';
 
 const SERVICES_UPDATE_INTERVAL = 2500;
 
@@ -234,13 +233,6 @@ export default class Dash2DockLiteExt extends Extension {
     this._queryDisplay();
     // this.startUp();
 
-    try {
-      this.appGridMagnifier = new AppGridMagnifier(this);
-      this.appGridMagnifier.enable();
-    } catch (e) {
-      console.log('[dash2dock-lite] AppGridMagnifier enable failed:', e);
-    }
-
     console.log('dash2dock-lite enabled');
 
     // to allow dynamic imports
@@ -285,13 +277,6 @@ export default class Dash2DockLiteExt extends Extension {
 
     delete this.icon_theme;
     this.icon_theme = null;
-
-    if (this.appGridMagnifier) {
-      try {
-        this.appGridMagnifier.disable();
-      } catch (e) {}
-      this.appGridMagnifier = null;
-    }
 
     Main.overview.d2dl = null;
     console.log('dash2dock-lite disabled');
