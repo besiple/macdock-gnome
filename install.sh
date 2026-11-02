@@ -24,12 +24,21 @@ ENGINE_DIR="${SCRIPT_DIR}/engine"
 EXT_DIR="${SCRIPT_DIR}/extension"
 TARGET_EXT_DIR="${HOME}/.local/share/gnome-shell/extensions/dash2dock-lite@icedman.github.com"
 
-# 1. Dependency checks
+# 1. Dependency checks & auto-installation
 echo -e "${BOLD}[1/5] Checking dependencies...${RESET}"
 
 if ! command -v cargo &>/dev/null; then
-    echo -e "${RED}Error: 'cargo' is not installed. Please install Rust (https://rustup.rs/ or pacman -S rust).${RESET}"
-    exit 1
+    echo -e "${YELLOW}'cargo' (Rust) is not found. Attempting to install build tools...${RESET}"
+    if command -v pacman &>/dev/null; then
+        sudo pacman -S --needed --noconfirm rust cargo gobject-introspection base-devel
+    elif command -v apt-get &>/dev/null; then
+        sudo apt-get update && sudo apt-get install -y rustc cargo libgirepository1.0-dev build-essential
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install -y rust cargo gobject-introspection-devel gcc
+    else
+        echo -e "${RED}Error: 'cargo' is not installed. Please install Rust manually (https://rustup.rs/)${RESET}"
+        exit 1
+    fi
 fi
 
 if ! command -v sudo &>/dev/null; then
@@ -54,23 +63,35 @@ echo -e "${GREEN}✓ Native engine built successfully.${RESET}"
 # Compile Typelib if g-ir-compiler exists, otherwise use pre-compiled
 if command -v g-ir-compiler &>/dev/null; then
     echo "Compiling GObject typelib from GIR..."
-    g-ir-compiler "${ENGINE_DIR}/MacDockEngine-1.0.gir" -o "${ENGINE_DIR}/MacDockEngine-1.0.typelib"
+    g-ir-compiler "${ENGINE_DIR}/MacDockEngine-1.0.gir" -o "${ENGINE_DIR}/MacDockEngine-1.0.typelib" 2>/dev/null || true
 fi
 
 # 3. Install Shared Library & GI Typelib
 echo -e "\n${BOLD}[3/5] Installing engine library and typelib to system...${RESET}"
 echo "Requesting sudo permissions..."
 
-# Disable extension first to avoid in-memory dlopen conflicts if already active
+# Disable conflicting docks and existing instance first
 if command -v gnome-extensions &>/dev/null; then
     gnome-extensions disable dash2dock-lite@icedman.github.com 2>/dev/null || true
+    gnome-extensions disable ubuntu-dock@ubuntu.com 2>/dev/null || true
+    gnome-extensions disable dash-to-dock@vmiceli 2>/dev/null || true
 fi
 
+# Install .so to system library paths
 sudo install -m 755 "${SO_FILE}" /usr/lib/libmacdock_engine.so
-sudo install -m 644 "${ENGINE_DIR}/MacDockEngine-1.0.typelib" /usr/lib/girepository-1.0/MacDockEngine-1.0.typelib
-sudo ldconfig
+if [ -d "/usr/lib64" ] && [ "/usr/lib64" != "/usr/lib" ]; then
+    sudo install -m 755 "${SO_FILE}" /usr/lib64/libmacdock_engine.so 2>/dev/null || true
+fi
 
-echo -e "${GREEN}✓ Engine installed to /usr/lib and /usr/lib/girepository-1.0.${RESET}"
+# Install typelib to GObject Introspection repository directories
+sudo mkdir -p /usr/lib/girepository-1.0
+sudo install -m 644 "${ENGINE_DIR}/MacDockEngine-1.0.typelib" /usr/lib/girepository-1.0/MacDockEngine-1.0.typelib
+if [ -d "/usr/lib64/girepository-1.0" ] && [ "/usr/lib64/girepository-1.0" != "/usr/lib/girepository-1.0" ]; then
+    sudo install -m 644 "${ENGINE_DIR}/MacDockEngine-1.0.typelib" /usr/lib64/girepository-1.0/MacDockEngine-1.0.typelib 2>/dev/null || true
+fi
+sudo ldconfig 2>/dev/null || true
+
+echo -e "${GREEN}✓ Engine installed to system libraries.${RESET}"
 
 # 4. Install GNOME Shell Extension
 echo -e "\n${BOLD}[4/5] Installing GNOME Shell Extension...${RESET}"
@@ -104,12 +125,13 @@ fi
 
 # 5. Enable & Activate
 echo -e "\n${BOLD}[5/5] Activating extension...${RESET}"
+ACTIVATED=false
 if command -v gnome-extensions &>/dev/null; then
     sleep 0.5
-    gnome-extensions enable dash2dock-lite@icedman.github.com 2>/dev/null || true
-    echo -e "${GREEN}✓ Extension enabled!${RESET}"
-else
-    echo -e "${YELLOW}Please restart GNOME Shell or log out and log back in to load the extension.${RESET}"
+    if gnome-extensions enable dash2dock-lite@icedman.github.com 2>/dev/null; then
+        ACTIVATED=true
+        echo -e "${GREEN}✓ Extension enabled!${RESET}"
+    fi
 fi
 
 echo -e "\n${BOLD}${GREEN}=========================================================="
@@ -118,4 +140,9 @@ echo "==========================================================${RESET}"
 echo -e "Enjoy:"
 echo -e "  • ${CYAN}Native Cairo glass bead running dots${RESET} with specular highlights"
 echo -e "  • ${CYAN}Realistic rubber squash & stretch bounce${RESET} powered by Rust"
+echo -e "  • ${CYAN}Clean floating App Grid${RESET} with zero labels and smooth zoom"
 echo -e "  • ${CYAN}Velvet dock slide & auto-hide${RESET}\n"
+
+if [ "$ACTIVATED" = false ]; then
+    echo -e "${YELLOW}👉 Если док не появился сразу: просто сделай Log Out и войди снова (в Wayland GNOME сканирует новые расширения при старте сессии).${RESET}\n"
+fi
