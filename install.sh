@@ -83,6 +83,25 @@ fi
 
 echo -e "${GREEN}✓ Extension installed to ${TARGET_EXT_DIR}.${RESET}"
 
+# Configure tailored macOS aesthetic preferences
+echo -e "\n${BOLD}[*] Applying macOS Dock & App Grid preferences...${RESET}"
+if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.shell.extensions.dash2dock-lite autohide-dash true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite autohide-dodge true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite autohide-speed 0.5 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite background-color '(0.0, 0.0, 0.0, 0.25)' 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite border-radius 3.0 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite icon-border-radius 3.0 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite edge-distance 0.093 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite hide-labels true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite icon-shadow true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite shrink-icons true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite running-indicator-style 2 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite animate-icons true 2>/dev/null || true
+    gsettings set org.gnome.shell.extensions.dash2dock-lite open-app-animation true 2>/dev/null || true
+    echo -e "${GREEN}✓ Preferences configured!${RESET}"
+fi
+
 # 5. Enable & Activate
 echo -e "\n${BOLD}[5/5] Activating extension...${RESET}"
 if command -v gnome-extensions &>/dev/null; then
