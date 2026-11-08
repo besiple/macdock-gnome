@@ -120,8 +120,8 @@
         <child>
           <object class="AdwActionRow" id="lamp-app-animation-row">
             <property name="visible">true</property>
-            <property name="title" translatable="yes">Lamp Animation</property>
-            <property name="subtitle" translatable="yes">Add genie on a lamp animation on minimizing windows. Requires the [compiz-alike-magic-lamp-effect@hermes83.github.com] extension. WARNING! This feature is UNSTABLE. Changing this setting may require extension restart.</property>
+            <property name="title" translatable="yes">Magic Lamp Effect (Genie)</property>
+            <property name="subtitle" translatable="yes">Animate window minimization and restoration with the authentic macOS Genie lamp effect directly into dock icons.</property>
             <property name="activatable-widget">lamp-app-animation</property>
             <child>
               <object class="GtkSwitch" id="lamp-app-animation">
