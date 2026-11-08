@@ -1,3 +1,5 @@
+import Shell from 'gi://Shell';
+import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 // these are hacks to make Dash2Dock Animated compatible with other Extensions
@@ -40,105 +42,86 @@ export const Integrations = class {
 
   // override compiz getIcon
   compiz_getIcon(actor) {
-    let [success, icon] = actor.meta_window.get_icon_geometry();
-    if (success) {
-      return icon;
+    let metaWin = actor.meta_window || (actor.get_meta_window ? actor.get_meta_window() : null);
+    let monitor = Main.layoutManager.monitors[metaWin ? metaWin.get_monitor() : Main.layoutManager.primaryIndex] || Main.layoutManager.primaryMonitor;
+
+    if (metaWin && metaWin.get_icon_geometry) {
+      let [success, icon] = metaWin.get_icon_geometry();
+      if (success && icon && (icon.x !== 0 || icon.y !== 0 || icon.width !== 0 || icon.height !== 0)) {
+        return icon;
+      }
     }
 
-    let docks = this.extension.docks;
+    let tracker = Shell.WindowTracker.get_default();
+    let app = metaWin ? tracker.get_window_app(metaWin) : null;
+    let appId = app ? app.get_id() : null;
+    let wmClass = metaWin?.get_wm_class ? metaWin.get_wm_class() : null;
+    let gtkId = metaWin?.get_gtk_application_id ? metaWin.get_gtk_application_id() : null;
+    let pid = metaWin?.get_pid ? metaWin.get_pid() : null;
+    let pids = app && app.get_pids ? app.get_pids() : [];
+    if (pid && !pids.includes(pid)) pids.push(pid);
 
-    let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
-    let dock = docks.find((d) => d._monitorIndex == monitor.index);
+    let docks = this.extension.docks || [];
+    let dock = docks.find((d) => d._monitorIndex === monitor.index) || docks[0];
 
     if (!dock) {
-      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
+      return { x: monitor.x + monitor.width / 2 - 24, y: monitor.y + monitor.height - 48, width: 48, height: 48, side: St.Side.BOTTOM };
     }
 
-    let dashIcon = null;
+    let icons = dock._icons || (typeof dock._findIcons === 'function' ? dock._findIcons() : null) || [];
+    for (let it of icons) {
+      let itApp = it._appwell ? it._appwell.app : (it.app || null);
+      let itAppId = itApp?.get_id ? itApp.get_id() : null;
+      let match = false;
 
-    let sz = dock._preferredIconSize();
-    let ofs = 0;
-    if (sz) {
-      let scale = dock.getMonitor().geometry_scale || 1;
-      ofs = (sz / 2) * scale;
+      if (app && itApp && app === itApp) {
+        match = true;
+      } else if (appId && itAppId && (itAppId === appId || itAppId.toLowerCase().includes(appId.toLowerCase()) || appId.toLowerCase().includes(itAppId.toLowerCase()))) {
+        match = true;
+      } else if (wmClass && itAppId && itAppId.toLowerCase().includes(wmClass.toLowerCase())) {
+        match = true;
+      } else if (gtkId && itAppId && itAppId.toLowerCase().includes(gtkId.toLowerCase())) {
+        match = true;
+      } else if (itApp && pids.length > 0 && itApp.get_pids && pids.some((p) => itApp.get_pids().includes(p))) {
+        match = true;
+      }
+
+      if (match) {
+        let pos = it.get_transformed_position();
+        let size = it.get_transformed_size();
+        let w = size[0] > 0 ? size[0] : 48;
+        let h = size[1] > 0 ? size[1] : 48;
+        let x = pos[0];
+        let y = pos[1];
+
+        if (it._screenCenterX !== undefined && it._slotCenterY !== undefined) {
+          x = it._screenCenterX - w / 2;
+          y = it._slotCenterY - h / 2;
+        }
+
+        let side = St.Side.BOTTOM;
+        if (dock._position === 'top' || dock._position === 1) side = St.Side.TOP;
+        else if (dock._position === 'left' || dock._position === 2) side = St.Side.LEFT;
+        else if (dock._position === 'right' || dock._position === 3) side = St.Side.RIGHT;
+
+        return { x, y, width: w, height: h, side };
+      }
     }
 
-    let pids = null;
-    let pid = actor.get_meta_window()
-      ? actor.get_meta_window().get_pid()
-      : null;
-    if (pid) {
-      dock.dash._box
-        .get_children()
-        .filter(
-          (dashElement) =>
-            dashElement.child &&
-            dashElement.child._delegate &&
-            dashElement.child._delegate.app
-        )
-        .forEach((dashElement) => {
-          pids = dashElement.child._delegate.app.get_pids();
-          if (pids && pids.indexOf(pid) >= 0) {
-            let renderer = dashElement;
-            if (dashElement._renderer) {
-              dashElement = dashElement._renderer;
-            }
-            let transformed_position = dashElement.get_transformed_position();
-            if (
-              transformed_position &&
-              transformed_position[0] &&
-              transformed_position[1]
-            ) {
-              dashIcon = {
-                x: transformed_position[0],
-                y: transformed_position[1],
-                width: 0,
-                height: 0,
-              };
-              return;
-            }
-          }
-        });
-    }
+    let dockPos = dock.get_transformed_position ? dock.get_transformed_position() : [dock.x, dock.y];
+    let dockSize = dock.get_transformed_size ? dock.get_transformed_size() : [dock.width, dock.height];
+    let side = St.Side.BOTTOM;
+    if (dock._position === 'top' || dock._position === 1) side = St.Side.TOP;
+    else if (dock._position === 'left' || dock._position === 2) side = St.Side.LEFT;
+    else if (dock._position === 'right' || dock._position === 3) side = St.Side.RIGHT;
 
-    if (!dashIcon) {
-      return { x: monitor.x, y: monitor.y, width: 0, height: 0 };
-    }
-
-    // console.log('compiz-alike-magic-lamp-effect: getIcon');
-    // console.log(`x:${dashIcon.x} y:${dashIcon.y} w:${dashIcon.width} h:${dashIcon.height}`);
-    let x = dashIcon.x;
-    let y = dashIcon.y;
-    let w = 0; //dashIcon.width;
-    let h = 0; //dashIcon.height;
-
-    switch (dock._position) {
-      case 'left':
-        x = dock._monitor.x;
-        y += ofs;
-        break;
-      case 'right':
-        x = dock._monitor.x + dock._monitor.width;
-        y += ofs;
-        break;
-      case 'top':
-        y = dock._monitor.y;
-        x += ofs;
-        break;
-      case 'bottom':
-        y = dock._monitor.y + dock._monitor.height;
-        x += ofs;
-        break;
-    }
-
-    dashIcon = {
-      x: x,
-      y: y,
-      width: w,
-      height: h,
+    return {
+      x: dockPos[0] + (dockSize[0] || 200) / 2 - 24,
+      y: dockPos[1],
+      width: 48,
+      height: 48,
+      side
     };
-
-    return dashIcon;
   }
 
   hookBms(hook = true) {
