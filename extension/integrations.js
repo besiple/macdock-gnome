@@ -65,7 +65,7 @@ export const Integrations = class {
     let dock = docks.find((d) => d._monitorIndex === monitor.index) || docks[0];
 
     if (!dock) {
-      return { x: monitor.x + monitor.width / 2 - 24, y: monitor.y + monitor.height - 48, width: 48, height: 48, side: St.Side.BOTTOM };
+      return { x: monitor.x + monitor.width / 2, y: monitor.y + monitor.height, width: 0, height: 0, side: St.Side.BOTTOM };
     }
 
     let icons = dock._icons || (typeof dock._findIcons === 'function' ? dock._findIcons() : null) || [];
@@ -104,7 +104,8 @@ export const Integrations = class {
         else if (dock._position === 'left' || dock._position === 2) side = St.Side.LEFT;
         else if (dock._position === 'right' || dock._position === 3) side = St.Side.RIGHT;
 
-        return { x, y, width: w, height: h, side };
+        let cx = (it._screenCenterX !== undefined) ? it._screenCenterX : (x + w / 2);
+        return { x: cx, y: monitor.y + monitor.height, width: 0, height: 0, side };
       }
     }
 
@@ -116,10 +117,10 @@ export const Integrations = class {
     else if (dock._position === 'right' || dock._position === 3) side = St.Side.RIGHT;
 
     return {
-      x: dockPos[0] + (dockSize[0] || 200) / 2 - 24,
-      y: dockPos[1],
-      width: 48,
-      height: 48,
+      x: dockPos[0] + (dockSize[0] || 200) / 2,
+      y: monitor.y + monitor.height,
+      width: 0,
+      height: 0,
       side
     };
   }

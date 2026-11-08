@@ -8,7 +8,7 @@ const Point = Graphene.Point;
 const TARGET_ICON_SIZE = 64; // Standard clean medium icon size (prevents 96px oversized icons)
 
 // macOS Launchpad Focus Zoom parameters
-const MAX_SCALE = 1.32;       // Clean, elegant hover zoom (+32%)
+const MAX_SCALE = 1.20;       // Clean, elegant hover zoom (+32%)
 const EASE_DURATION = 140;    // Fluid cubic animation duration in ms
 
 export class AppGridClean {
