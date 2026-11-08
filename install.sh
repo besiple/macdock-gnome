@@ -100,6 +100,11 @@ cp -r "${EXT_DIR}"/* "${TARGET_EXT_DIR}/"
 
 if command -v glib-compile-schemas &>/dev/null; then
     glib-compile-schemas "${TARGET_EXT_DIR}/schemas" 2>/dev/null || true
+    # Install schema to user glib schemas so gsettings CLI can configure properties immediately
+    USER_SCHEMA_DIR="${HOME}/.local/share/glib-2.0/schemas"
+    mkdir -p "${USER_SCHEMA_DIR}"
+    cp -f "${TARGET_EXT_DIR}/schemas/"*.xml "${USER_SCHEMA_DIR}/" 2>/dev/null || true
+    glib-compile-schemas "${USER_SCHEMA_DIR}" 2>/dev/null || true
 fi
 
 echo -e "${GREEN}✓ Extension installed to ${TARGET_EXT_DIR}.${RESET}"

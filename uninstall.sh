@@ -19,6 +19,9 @@ if command -v gnome-extensions &>/dev/null; then
 fi
 
 rm -rf "${TARGET_EXT_DIR}"
+USER_SCHEMA_DIR="${HOME}/.local/share/glib-2.0/schemas"
+rm -f "${USER_SCHEMA_DIR}/org.gnome.shell.extensions.dash2dock-lite.gschema.xml"
+glib-compile-schemas "${USER_SCHEMA_DIR}" 2>/dev/null || true
 echo -e "${GREEN}✓ Extension removed.${RESET}"
 
 echo "Removing system libraries (requires sudo)..."
