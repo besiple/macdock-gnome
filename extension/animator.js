@@ -584,7 +584,7 @@ export let Animator = class {
         }
         // noticesCount = 1;
         let target = dock.renderArea;
-        if (badge && noticesCount > 0) {
+        if (false && badge && noticesCount > 0) { // Disabled to prevent duplicate indicator dot on top of icon
           badge.update(icon, {
             noticesCount,
             position: dock._position,
